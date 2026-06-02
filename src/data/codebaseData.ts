@@ -433,6 +433,183 @@ export const syncLedgerQueue = async (req: Request, res: Response, next: NextFun
     next(error);
   }
 };`
+  },
+  {
+    path: "cashbridge-backend/src/validators/business.validator.ts",
+    filename: "business.validator.ts",
+    description: "Validation schema matching Zod targets for sales reporting, client cohort entries, and active debt repayments.",
+    content: `import { z } from "zod";
+
+export const createTransactionSchema = z.object({
+  body: z.object({
+    localId: z.string().optional(),
+    customerId: z.string().uuid().optional(),
+    description: z.string().min(3),
+    amount: z.number(),
+    category: z.string().optional().default("Sales"),
+    paymentMethod: z.enum(["CASH", "MOBILE_MONEY", "CARD", "DEBT"]).default("CASH"),
+    offlineCreatedAt: z.string().datetime().optional()
+  })
+});
+
+export const createCustomerSchema = z.object({
+  body: z.object({
+    name: z.string().min(2),
+    phoneNumber: z.string().optional()
+  })
+});
+
+export const createDebtSchema = z.object({
+  body: z.object({
+    customerId: z.string().uuid(),
+    amountTotal: z.number().positive(),
+    dueDate: z.string().datetime().optional()
+  })
+});
+
+export const recordRepaymentSchema = z.object({
+  body: z.object({
+    amountPaid: z.number().positive(),
+    paymentMethod: z.enum(["CASH", "MOBILE_MONEY", "CARD"]).default("CASH")
+  })
+});`
+  },
+  {
+    path: "cashbridge-backend/src/services/business.service.ts",
+    filename: "business.service.ts",
+    description: "Connects transaction ledgers, registers active merchant-customer cohort lists, writes debt allocations, and calculates cashflow values for analytics.",
+    content: `import { supabaseAdmin } from "../config/supabase";
+import { AppError } from "../middlewares/error.middleware";
+
+export class BusinessService {
+  public static async resolveBusinessId(userId: string): Promise<string> {
+    const { data } = await supabaseAdmin.from("businesses").select("id").eq("owner_id", userId).maybeSingle();
+    if (!data) throw new AppError("No business matches", 404);
+    return data.id;
+  }
+
+  public static async createTransaction(userId: string, data: any) {
+    const businessId = await this.resolveBusinessId(userId);
+    const { data: tx, error } = await supabaseAdmin.from("transactions").insert({
+      business_id: businessId,
+      customer_id: data.customerId || null,
+      description: data.description,
+      amount: data.amount,
+      category: data.category,
+      payment_method: data.paymentMethod,
+      offline_created_at: data.offlineCreatedAt || new Date().toISOString()
+    }).select().single();
+    if (error) throw new AppError(error.message, 500);
+    return tx;
+  }
+
+  public static async createCustomer(userId: string, data: any) {
+    const businessId = await this.resolveBusinessId(userId);
+    const { data: customer, error } = await supabaseAdmin.from("customers").insert({
+      business_id: businessId,
+      name: data.name,
+      phone_number: data.phoneNumber || null
+    }).select().single();
+    if (error) throw new AppError(error.message, 500);
+    return customer;
+  }
+
+  public static async createDebt(userId: string, data: any) {
+    const businessId = await this.resolveBusinessId(userId);
+    const { data: debt, error } = await supabaseAdmin.from("debts").insert({
+      customer_id: data.customerId,
+      business_id: businessId,
+      amount_total: data.amountTotal,
+      status: "UNPAID"
+    }).select().single();
+    if (error) throw new AppError(error.message, 500);
+    return debt;
+  }
+
+  public static async getTransactionHistory(userId: string, filters: any) {
+    const businessId = await this.resolveBusinessId(userId);
+    let query = supabaseAdmin.from("transactions").select("*, customers(name)", { count: "exact" }).eq("business_id", businessId);
+    const { data, count } = await query.order("offline_created_at", { ascending: false });
+    return { transactions: data, pagination: { totalItems: count || 0 } };
+  }
+
+  public static async getAnalyticsSummary(userId: string) {
+    const businessId = await this.resolveBusinessId(userId);
+    const { data: txs } = await supabaseAdmin.from("transactions").select("amount, payment_method").eq("business_id", businessId);
+    let totalRevenue = 0, totalExpenses = 0;
+    txs?.forEach(t => {
+      const amt = Number(t.amount);
+      if (amt > 0) totalRevenue += amt;
+      else totalExpenses += Math.abs(amt);
+    });
+    return { financials: { totalRevenue, totalExpenses, netCashflow: totalRevenue - totalExpenses } };
+  }
+}`
+  },
+  {
+    path: "cashbridge-backend/src/controllers/business.controller.ts",
+    filename: "business.controller.ts",
+    description: "Accepts merchant bearer context, passes metadata payload to services, and converts outputs into success or failure JSON packages.",
+    content: `import { Request, Response, NextFunction } from "express";
+import { BusinessService } from "../services/business.service";
+
+export class BusinessController {
+  public static async createTransaction(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tx = await BusinessService.createTransaction(req.user!.id, req.body);
+      return res.status(201).json({ status: "success", data: tx });
+    } catch (err) { next(err); }
+  }
+
+  public static async createCustomer(req: Request, res: Response, next: NextFunction) {
+    try {
+      const customer = await BusinessService.createCustomer(req.user!.id, req.body);
+      return res.status(201).json({ status: "success", data: customer });
+    } catch (err) { next(err); }
+  }
+
+  public static async createDebt(req: Request, res: Response, next: NextFunction) {
+    try {
+      const debt = await BusinessService.createDebt(req.user!.id, req.body);
+      return res.status(201).json({ status: "success", data: debt });
+    } catch (err) { next(err); }
+  }
+
+  public static async getTransactionHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const history = await BusinessService.getTransactionHistory(req.user!.id, req.query);
+      return res.status(200).json({ status: "success", data: history.transactions, pagination: history.pagination });
+    } catch (err) { next(err); }
+  }
+
+  public static async getAnalyticsSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const summary = await BusinessService.getAnalyticsSummary(req.user!.id);
+      return res.status(200).json({ status: "success", data: summary });
+    } catch (err) { next(err); }
+  }
+}`
+  },
+  {
+    path: "cashbridge-backend/src/routes/business.routes.ts",
+    filename: "business.routes.ts",
+    description: "Registers merchant route paths for bookkeeping, client profiles, and stats endpoints backed by JWT validations.",
+    content: `import { Router } from "express";
+import { BusinessController } from "../controllers/business.controller";
+import { restrictToAuth } from "../middlewares/auth.middleware";
+import { validateRequest } from "../middlewares/validation.middleware";
+import { createTransactionSchema, createCustomerSchema, createDebtSchema } from "../validators/business.validator";
+
+const router = Router();
+router.use(restrictToAuth);
+
+router.post("/transactions", validateRequest(createTransactionSchema), BusinessController.createTransaction);
+router.get("/transactions", BusinessController.getTransactionHistory);
+router.post("/customers", validateRequest(createCustomerSchema), BusinessController.createCustomer);
+router.post("/debts", validateRequest(createDebtSchema), BusinessController.createDebt);
+router.get("/analytics", BusinessController.getAnalyticsSummary);
+
+export default router;`
   }
 ];
 

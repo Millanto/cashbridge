@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import { errorHandler } from "./middlewares/error.middleware";
 import { loggingMiddleware } from "./middlewares/logging.middleware";
 import authRoutes from "./routes/auth.routes";
+import businessRoutes from "./routes/business.routes";
 
 // Create express instance
 const app: Application = express();
@@ -87,6 +88,7 @@ app.get("/api/v1", (req: Request, res: Response) => {
 
 // 8. Placeholders for actual MVC routers to be added in next development phases
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/business", businessRoutes);
 // app.use("/api/v1/sync", syncRoutes);
 // app.use("/api/v1/payments", paymentRoutes);
 
