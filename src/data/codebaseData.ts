@@ -1550,5 +1550,98 @@ export const Register: React.FC = () => {
     </div>
   );
 };`
+  },
+  {
+    path: "cashbridge-frontend/src/components/ui/Skeleton.tsx",
+    filename: "Skeleton.tsx",
+    description: "An animated loading skeleton used for low-latency visual buffering of cash flows.",
+    content: `import React from "react";
+
+interface SkeletonProps {
+  className?: string;
+  variant?: "text" | "circular" | "rectangular";
+}
+
+export const Skeleton: React.FC<SkeletonProps> = ({
+  className = "",
+  variant = "text"
+}) => {
+  const baseStyle = "animate-pulse bg-slate-705/30";
+  const variants = {
+    text: "h-3.5 w-full rounded",
+    circular: "rounded-full shrink-0",
+    rectangular: "rounded-xl"
+  };
+  return <div className={\`\${baseStyle} \${variants[variant]} \${className}\`} />;
+};`
+  },
+  {
+    path: "cashbridge-frontend/src/pages/Dashboard.tsx",
+    filename: "Dashboard.tsx",
+    description: "Polished multi-state financial dashboard integrating offline warning stripes, dynamic SVG charts, and interactive manual entries.",
+    content: `import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  TrendingUp, 
+  Wifi, 
+  WifiOff, 
+  CreditCard, 
+  BadgeAlert,
+  Plus,
+  RefreshCcw,
+  CheckCircle2,
+  XCircle,
+  Coins
+} from "lucide-react";
+import { Button } from "../components/ui/Button";
+import { Skeleton } from "../components/ui/Skeleton";
+import { Alert } from "../components/ui/Alert";
+
+export const Dashboard: React.FC = () => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [filterCategory, setFilterCategory] = useState("ALL");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboardMetrics"],
+    queryFn: async () => ({
+      revenueGHS: 45280,
+      momoInboundGHS: 28910.45,
+      outstandingDebtGHS: 12450.00,
+      unresolvedSyncBatch: 2,
+      growthPercentage: 12
+    })
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-6 space-y-6">
+      {!isOnline && (
+        <Alert type="error" message="Terminal Offline: Buffering bookkeeping actions locally in client's IndexedDB." />
+      )}
+      <div className="flex justify-between items-center border-b border-slate-800 pb-5">
+        <h1 className="text-2xl font-bold">Merchant Ledger Workspace</h1>
+        <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-bold">Cloud Live</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700/60">
+          <span className="text-[10px] uppercase font-bold text-slate-400">Gross Sales</span>
+          <h3 className="text-2xl font-bold mt-2">₵45,280.00</h3>
+        </div>
+        <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700/60">
+          <span className="text-[10px] uppercase font-bold text-slate-400">MoMo Inbound</span>
+          <h3 className="text-2xl font-bold mt-2">₵28,910.45</h3>
+        </div>
+        <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700/60">
+          <span className="text-[10px] uppercase font-bold text-slate-400">Outstanding Debt</span>
+          <h3 className="text-2xl font-bold mt-2 text-rose-400">₵12,450.00</h3>
+        </div>
+        <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700/60">
+          <span className="text-[10px] uppercase font-bold text-slate-400">Offline Queue</span>
+          <h3 className="text-2xl font-bold mt-2">2 Records</h3>
+        </div>
+      </div>
+    </div>
+  );
+};`
   }
 ];
