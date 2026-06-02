@@ -928,5 +928,321 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });`
+  },
+  {
+    path: "cashbridge-frontend/package.json",
+    filename: "package.json",
+    description: "Production-ready package configuration mapping out state managers, offline Dexie.js triggers, router parameters, and build commands.",
+    content: `{
+  "name": "cashbridge-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.28.4",
+    "axios": "^1.6.8",
+    "dexie": "^4.0.1",
+    "lucide-react": "^0.363.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.6"
+  }
+}`
+  },
+  {
+    path: "cashbridge-frontend/src/structure.md",
+    filename: "structure.md",
+    description: "Scalable production folder structure documentation defining boundaries, state folders, layout models, logic components, and api wrappers.",
+    content: `# CashBridge Scalable Frontend Structure
+
+A rigid, modular, and container-safe frontend workspace optimized for offline resilience and fast mobile load times:
+
+\`\`\`text
+cashbridge-frontend/
+├── public/                 # Static elements (manifest.json, service worker)
+│   └── sw.js               # Performance caching service worker
+├── src/
+│   ├── api/                # Network service config layer
+│   │   ├── client.ts       # Base Axios instance with automatic bearer attachments
+│   │   └── services/       # Feature-specific api queries mapping routes
+│   │       ├── auth.ts      # Authentication service endpoints
+│   │       ├── ledger.ts    # Handshakes tracking sales and ledger actions
+│   │       └── payment.ts   # Stripe / MoMo initialization triggers
+│   ├── components/         # Shared stateful & presentation modules
+│   │   ├── ui/             # High-contrast core reusable inputs and buttons
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── Badge.tsx
+│   │   └── feedback/       # Alerts, toasts, offline warning indicators
+│   ├── db/                 # Direct database interactions
+│   │   └── localDb.ts      # Low level Dexie.js configuration
+│   ├── hooks/              # Custom functional hooks & helpers
+│   │   ├── useOfflineSync.ts
+│   │   └── useDebounce.ts
+│   ├── layouts/            # Shared structural containers
+│   │   ├── AuthLayout.tsx  # Layout for login/onboarding
+│   │   └── DashboardLayout.tsx # Navigation rail with status displays
+│   ├── routes/             # Client router structures
+│   │   ├── AppRoutes.tsx   # React Router mappings with route protections
+│   │   └── ProtectedRoute.tsx # Auth status route guard checks
+│   ├── store/              # Global state management context
+│   │   └── authStore.ts    # Zustand login data persist state container
+│   ├── styles/             # Application styles root
+│   │   └── index.css       # Tailwind base, utilities, components
+│   ├── types/              # Collective system structural definitions
+│   │   └── index.ts
+│   ├── App.tsx             # Main entry router container
+│   └── main.tsx            # Setup react app node
+├── tailwind.config.js      # Adaptive styling configuration
+├── vite.config.ts          # Build server port mapping
+└── tsconfig.json           # Type validations compilation criteria
+\`\`\`
+`
+  },
+  {
+    path: "cashbridge-frontend/tailwind.config.js",
+    filename: "tailwind.config.js",
+    description: "Optimized mobile-first styled configurations including color palette rules and custom screen-size mappings.",
+    content: `/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    screens: {
+      'xs': '375px', // Tiny smartphones
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
+    extend: {
+      colors: {
+        brand: {
+          light: '#3b82f6',
+          DEFAULT: '#1d4ed8',
+          dark: '#1e3a8a',
+          accent: '#eab308', // High-visibility warning indicators for MoMo/Stripe pending fields
+        },
+        slate: {
+          DEFAULT: '#64748b',
+          light: '#f8fafc',
+          dark: '#0f172a',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'SF Pro Display', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+      }
+    },
+  },
+  plugins: [],
+}`
+  },
+  {
+    path: "cashbridge-frontend/src/api/client.ts",
+    filename: "client.ts",
+    description: "Primary Axios connection configured with JWT session interceptors, clear base paths, and authorization token attachments.",
+    content: `import axios from "axios";
+import { useAuthStore } from "../store/authStore";
+
+// Resolve API environment configs
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json"
+  }
+});
+
+// Request Interceptor: Inject Authorization token securely
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().token;
+    if (token && config.headers) {
+      config.headers.Authorization = \`Bearer \${token}\`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response Interceptor: Filter for auth expirations and auto log out if refresh keys expired
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Auto-logout user if server rejects access due to invalid/revoked JWT tokens
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      console.warn("Unauthorized API call detected. Erasing session keys from memory...");
+      
+      // Expire session context
+      useAuthStore.getState().logout();
+      
+      // Auto redirect to sign-in path
+      window.location.href = "/login?expired=true";
+    }
+    
+    return Promise.reject(error);
+  }
+);`
+  },
+  {
+    path: "cashbridge-frontend/src/store/authStore.ts",
+    filename: "authStore.ts",
+    description: "Zustand configuration storing merchant sessions, authentication states, and caching JSON web tokens onto local storage.",
+    content: `import { create } from "zustand";
+
+interface MerchantUser {
+  id: string;
+  email: string;
+  businessName?: string;
+  role: "OWNER" | "OPERATOR";
+}
+
+interface AuthState {
+  user: MerchantUser | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  
+  // Handlers
+  setSession: (user: MerchantUser, token: string) => void;
+  logout: () => void;
+  setLoading: (loading: boolean) => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  // Hydrate initial properties from safe localStorage keys
+  user: (() => {
+    const raw = localStorage.getItem("cb_merchant_user");
+    try {
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })(),
+  token: localStorage.getItem("cb_merchant_token"),
+  isAuthenticated: !!localStorage.getItem("cb_merchant_token"),
+  isLoading: false,
+
+  setSession: (user, token) => {
+    localStorage.setItem("cb_merchant_user", JSON.stringify(user));
+    localStorage.setItem("cb_merchant_token", token);
+    
+    set({
+      user,
+      token,
+      isAuthenticated: true,
+      isLoading: false
+    });
+  },
+
+  logout: () => {
+    localStorage.removeItem("cb_merchant_user");
+    localStorage.removeItem("cb_merchant_token");
+    
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false
+    });
+  },
+
+  setLoading: (loading) => set({ isLoading: loading })
+}));`
+  },
+  {
+    path: "cashbridge-frontend/src/routes/AppRoutes.tsx",
+    filename: "AppRoutes.tsx",
+    description: "Router configuration implementing Protected route boundaries, authenticated views, and layout wrappers.",
+    content: `import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+
+// Protected Route Shielding Component
+interface ShieldProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ShieldProps> = ({ children }) => {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  
+  // If not authenticated, redirect instantly to sign-in
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Lazy / Dummy imports for structural declarations
+const LoginPlaceholder = () => (
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200">
+      <h2 className="text-xl font-bold text-slate-800">Sign in to CashBridge</h2>
+      <p className="text-xs text-slate-500 mt-1">Readying production ledger environment...</p>
+    </div>
+  </div>
+);
+
+const DashboardPlaceholder = () => (
+  <div className="p-6">
+    <h2 className="text-xl font-bold text-slate-800">Ledger Metrics</h2>
+    <p className="text-xs text-slate-500">Live offline synchronization tracking active.</p>
+  </div>
+);
+
+export const AppRoutes: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public auth boundaries */}
+        <Route path="/login" element={<LoginPlaceholder />} />
+        
+        {/* Protected secure application paths */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPlaceholder />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch-all redirection logic */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};`
   }
 ];
