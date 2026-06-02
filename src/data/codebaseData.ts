@@ -7,6 +7,125 @@ export interface SourceFile {
 
 export const backendCodefiles: SourceFile[] = [
   {
+    path: "cashbridge-backend/src/database/schema.sql",
+    filename: "schema.sql",
+    description: "Supabase PostgreSQL production-grade DDL database schema with indexes, constraints, handles, automatically triggered wallets, and deep RLS policies.",
+    content: `-- Enable UUID extension if not already present
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ==============================================================================
+-- 1. USERS TABLE
+-- ==============================================================================
+CREATE TABLE public.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    role VARCHAR(20) DEFAULT 'merchant' NOT NULL CHECK (role IN ('merchant', 'admin')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ==============================================================================
+-- 2. BUSINESSES TABLE
+-- ==============================================================================
+CREATE TABLE public.businesses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+    name VARCHAR(150) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'GHS' NOT NULL CHECK (char_length(currency) = 3),
+    kyc_status VARCHAR(30) DEFAULT 'LEVEL_1_PENDING' NOT NULL CHECK (kyc_status IN ('LEVEL_1_PENDING', 'LEVEL_2_APPROVED', 'REJECTED')),
+    phone_number VARCHAR(30),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ==============================================================================
+-- 3. WALLETS (ESCROW BALANCE FLOW)
+-- ==============================================================================
+CREATE TABLE public.wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL UNIQUE REFERENCES public.businesses(id) ON DELETE CASCADE,
+    balance NUMERIC(15,2) DEFAULT 0.00 NOT NULL CHECK (balance >= 0.00),
+    pushed_balance NUMERIC(15,2) DEFAULT 0.00 NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ==============================================================================
+-- 4. CUSTOMERS TABLE
+-- ==============================================================================
+CREATE TABLE public.customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(30),
+    debt_active BOOLEAN DEFAULT false NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ==============================================================================
+-- 5. TRANSACTIONS TABLE
+-- ==============================================================================
+CREATE TABLE public.transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    local_id VARCHAR(100) UNIQUE,
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    amount NUMERIC(12,2) NOT NULL,
+    category VARCHAR(50) DEFAULT 'Sales' NOT NULL,
+    payment_method VARCHAR(30) DEFAULT 'CASH' NOT NULL,
+    offline_created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- ==============================================================================
+-- 6. DEBTS TABLE
+-- ==============================================================================
+CREATE TABLE public.debts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    amount_total NUMERIC(12,2) NOT NULL CHECK (amount_total > 0.00),
+    amount_paid NUMERIC(12,2) DEFAULT 0.00 NOT NULL CHECK (amount_paid >= 0.00),
+    status VARCHAR(25) DEFAULT 'UNPAID' NOT NULL CHECK (status IN ('UNPAID', 'PARTIALLY_PAID', 'SETTLED')),
+    due_date TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT check_debt_limits CHECK (amount_paid <= amount_total)
+);
+
+-- ==============================================================================
+-- 7. PAYMENT LOGS
+-- ==============================================================================
+CREATE TABLE public.payment_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    payment_gateway VARCHAR(30) NOT NULL,
+    provider_reference VARCHAR(100) UNIQUE NOT NULL,
+    amount NUMERIC(15,2) NOT NULL CHECK (amount > 0.00),
+    status VARCHAR(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'SUCCESSFUL', 'FAILED')),
+    direction VARCHAR(15) NOT NULL CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    payload_raw JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    finalized_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ==============================================================================
+-- 8. SYNC SESSIONS
+-- ==============================================================================
+CREATE TABLE public.sync_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    device_id VARCHAR(100),
+    records_synced INTEGER DEFAULT 0 NOT NULL,
+    client_timestamp TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);`
+  },
+  {
     path: "cashbridge-backend/src/server.ts",
     filename: "server.ts",
     description: "The primary Express application bootstrapper. Configures Helmet safety headers, CORS policies, rate limit lists, and mounts modular routing gates.",
