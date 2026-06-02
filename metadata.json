@@ -1,0 +1,6 @@
+{
+  "name": "CashBridge",
+  "description": "An offline-friendly bookkeeping and wallet platform for African market traders and small businesses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
