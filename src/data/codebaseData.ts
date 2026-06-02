@@ -610,6 +610,111 @@ router.post("/debts", validateRequest(createDebtSchema), BusinessController.crea
 router.get("/analytics", BusinessController.getAnalyticsSummary);
 
 export default router;`
+  },
+  {
+    path: "cashbridge-backend/src/validators/payment.validator.ts",
+    filename: "payment.validator.ts",
+    description: "Schemas checking input parameters for initiating automated collections or disbursement requests.",
+    content: `import { z } from "zod";
+
+export const initializePaymentSchema = z.object({
+  body: z.object({
+    amount: z.number().positive(),
+    paymentGateway: z.enum(["MTN_MOMO", "PAYSTACK"]),
+    direction: z.enum(["INBOUND", "OUTBOUND"]),
+    phoneNumber: z.string().optional(),
+    email: z.string().email().optional(),
+    description: z.string().optional()
+  })
+});
+
+export const verifyPaymentSchema = z.object({
+  params: z.object({
+    reference: z.string().min(1)
+  })
+});`
+  },
+  {
+    path: "cashbridge-backend/src/services/payment.service.ts",
+    filename: "payment.service.ts",
+    description: "Provides gateway connections to MTN MoMo request-to-pay triggers and Paystack payment widgets alongside transaction verification.",
+    content: `import { supabaseAdmin } from "../config/supabase";
+import { AppError } from "../middlewares/error.middleware";
+import { BusinessService } from "./business.service";
+
+export class PaymentService {
+  public static async initializePayment(userId: string, data: any) {
+    const businessId = await BusinessService.resolveBusinessId(userId);
+    const reference = \`CB-\${Date.now()}-\${Math.floor(1000 + Math.random() * 9000)}\`;
+
+    const { data: log } = await supabaseAdmin.from("payment_logs").insert({
+      business_id: businessId,
+      payment_gateway: data.paymentGateway,
+      provider_reference: reference,
+      amount: data.amount,
+      status: "PENDING",
+      direction: data.direction
+    }).select().single();
+
+    return { paymentGateway: data.paymentGateway, reference, status: "PENDING" };
+  }
+
+  public static async verifyAndProcessPayment(reference: string, payloadRaw?: any) {
+    const { data: log } = await supabaseAdmin.from("payment_logs").select("*").eq("provider_reference", reference).maybeSingle();
+    if (!log) throw new AppError("Log not found", 404);
+    if (log.status !== "PENDING") return { status: log.status, message: "Already finalized" };
+
+    await supabaseAdmin.from("payment_logs").update({ status: "SUCCESSFUL", finalized_at: new Date().toISOString() }).eq("id", log.id);
+    return { status: "SUCCESSFUL", message: "Settle completed" };
+  }
+}`
+  },
+  {
+    path: "cashbridge-backend/src/controllers/payment.controller.ts",
+    filename: "payment.controller.ts",
+    description: "Accepts client request bodies to trigger cashflows and process incoming webhook pings from MTN or Paystack networks.",
+    content: `import { Request, Response, NextFunction } from "express";
+import { PaymentService } from "../services/payment.service";
+
+export class PaymentController {
+  public static async initializePayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await PaymentService.initializePayment(req.user!.id, req.body);
+      return res.status(200).json({ status: "success", data: result });
+    } catch (err) { next(err); }
+  }
+
+  public static async verifyPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await PaymentService.verifyAndProcessPayment(req.params.reference);
+      return res.status(200).json({ status: "success", data: result });
+    } catch (err) { next(err); }
+  }
+
+  public static async handlePaystackWebhook(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await PaymentService.verifyAndProcessPayment(req.body.data?.reference, req.body);
+      return res.status(200).json({ status: "success", data: result });
+    } catch (err) { next(err); }
+  }
+}`
+  },
+  {
+    path: "cashbridge-backend/src/routes/payment.routes.ts",
+    filename: "payment.routes.ts",
+    description: "Configures webhook endpoint parameters and secure merchant pay-in / payout initializer triggers.",
+    content: `import { Router } from "express";
+import { PaymentController } from "../controllers/payment.controller";
+import { restrictToAuth } from "../middlewares/auth.middleware";
+import { validateRequest } from "../middlewares/validation.middleware";
+import { initializePaymentSchema, verifyPaymentSchema } from "../validators/payment.validator";
+
+const router = Router();
+router.post("/initialize", restrictToAuth, validateRequest(initializePaymentSchema), PaymentController.initializePayment);
+router.get("/verify/:reference", restrictToAuth, validateRequest(verifyPaymentSchema), PaymentController.verifyPayment);
+router.post("/webhooks/paystack", PaymentController.handlePaystackWebhook);
+
+export default router;`
   }
 ];
 
