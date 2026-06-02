@@ -23,5 +23,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["cashbridge-backend", "dist", "node_modules"]
+  "exclude": ["cashbridge-backend", "cashbridge-frontend", "dist", "node_modules"]
 }

@@ -1244,5 +1244,311 @@ export const AppRoutes: React.FC = () => {
     </BrowserRouter>
   );
 };`
+  },
+  {
+    path: "cashbridge-frontend/src/components/ui/Button.tsx",
+    filename: "Button.tsx",
+    description: "Reusable high-contrast button wrapper featuring customizable loaders and responsive size boundaries.",
+    content: `import React from "react";
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+  isLoading?: boolean;
+  size?: "sm" | "md" | "lg";
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = "primary",
+  isLoading = false,
+  size = "md",
+  className = "",
+  disabled,
+  ...props
+}) => {
+  const baseStyle = "w-full flex items-center justify-center font-bold tracking-tight rounded-xl transition-all duration-250 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  
+  const variants = {
+    primary: "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-sm",
+    secondary: "bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 focus:ring-blue-500",
+    danger: "bg-rose-600 hover:bg-rose-700 text-white focus:ring-rose-500 shadow-sm",
+    ghost: "bg-transparent hover:bg-slate-50 text-slate-600 hover:text-slate-900"
+  };
+
+  const sizes = {
+    sm: "py-2 px-3 text-xs",
+    md: "py-3 px-4 text-xs sm:text-sm",
+    lg: "py-4 px-6 text-sm sm:text-base"
+  };
+
+  return (
+    <button
+      disabled={disabled || isLoading}
+      className={\`\${baseStyle} \${variants[variant]} \${sizes[size]} \${className}\`}
+      {...props}
+    >
+      {isLoading ? (
+        <svg
+          className="animate-spin -ml-1 mr-2 h-4 w-4"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      ) : null}
+      {children}
+    </button>
+  );
+};`
+  },
+  {
+    path: "cashbridge-frontend/src/components/ui/Input.tsx",
+    filename: "Input.tsx",
+    description: "Reusable custom form input integrating customizable prefix icons and localized error boundaries.",
+    content: `import React from "react";
+
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  error?: string;
+  icon?: React.ReactNode;
+}
+
+export const Input: React.FC<InputProps> = ({
+  label,
+  error,
+  icon,
+  className = "",
+  id,
+  type = "text",
+  ...props
+}) => {
+  return (
+    <div className="space-y-1.5 w-full">
+      <div className="flex justify-between items-center bg-transparent border-none p-0 m-0">
+        <label htmlFor={id} className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+          {label}
+        </label>
+        {error && (
+          <span className="text-[10px] font-bold text-rose-600 lowercase bg-rose-50 px-1.5 py-0.5 rounded">
+            {error}
+          </span>
+        )}
+      </div>
+      <div className="relative">
+        {icon && (
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            {icon}
+          </div>
+        )}
+        <input
+          id={id}
+          type={type}
+          className={\`w-full bg-white border rounded-xl p-3 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all \${
+            icon ? "pl-11" : "pl-3.5"
+          } \${
+            error
+              ? "border-rose-300 focus:ring-rose-500 focus:border-rose-500 bg-rose-50/10"
+              : "border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+          } \${className}\`}
+          {...props}
+        />
+      </div>
+    </div>
+  );
+};`
+  },
+  {
+    path: "cashbridge-frontend/src/components/ui/Alert.tsx",
+    filename: "Alert.tsx",
+    description: "Multi-state notification band displaying credentials validation state and database responses.",
+    content: `import React from "react";
+import { AlertCircle, CheckCircle, Info } from "lucide-react";
+
+interface AlertProps {
+  type?: "info" | "success" | "error";
+  title?: string;
+  message: string;
+}
+
+export const Alert: React.FC<AlertProps> = ({
+  type = "info",
+  title,
+  message
+}) => {
+  const styles = {
+    info: "bg-blue-50 border-blue-200 text-blue-800",
+    success: "bg-emerald-50 border-emerald-200 text-emerald-800",
+    error: "bg-rose-50 border-rose-250 text-rose-800"
+  };
+
+  const Icons = {
+    info: <Info className="h-4 w-4 text-blue-500 shrink-0" />,
+    success: <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />,
+    error: <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+  };
+
+  return (
+    <div className={\`p-3.5 border rounded-xl flex items-start gap-3 text-xs leading-relaxed \${styles[type]}\`}>
+      {Icons[type]}
+      <div className="min-w-0">
+        {title && <span className="font-bold block tracking-tight mb-0.5">{title}</span>}
+        <p className="font-medium">{message}</p>
+      </div>
+    </div>
+  );
+};`
+  },
+  {
+    path: "cashbridge-frontend/src/pages/Login.tsx",
+    filename: "Login.tsx",
+    description: "Secure visual entry page implementing dual client/server validation, loading buttons, and Zustand persistence.",
+    content: `import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Mail, Lock, ShieldAlert, ArrowRight, UserCheck } from "lucide-react";
+import { apiClient } from "../api/client";
+import { useAuthStore } from "../store/authStore";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Alert } from "../components/ui/Alert";
+
+export const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const setSession = useAuthStore((state) => state.setSession);
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email) {
+      newErrors.email = "Email address is required.";
+    } else if (!/\\S+@\\S+\\.\\S+/.test(email)) {
+      newErrors.email = "Please supply a valid email address.";
+    }
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must capture at least 8 characters.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setApiError(null);
+    setErrors({});
+    if (!validateForm()) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await apiClient.post("/auth/login", { email, password });
+      const { user, token } = response.data.data;
+      setSession(user, token);
+      setSuccess(true);
+      setTimeout(() => navigate("/dashboard"), 1000);
+    } catch (err: any) {
+      const message = err.response?.data?.error || err.response?.data?.message || "Service unavailable. Verify internet connectivity.";
+      setApiError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-slate-800 rounded-2xl border border-slate-700/60 shadow-xl overflow-hidden animate-fade-in">
+        <div className="p-8 border-b border-slate-700/40 bg-slate-850 flex flex-col items-center">
+          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center mb-4 text-white font-bold">CB</div>
+          <h2 className="text-xl font-bold text-white">Welcome to CashBridge</h2>
+          <p className="text-xs text-slate-400 mt-1">Terminal session gateway</p>
+        </div>
+        <form onSubmit={handleSubmit} className="p-8 space-y-5">
+          {apiError && <Alert type="error" title="Auth Failure" message={apiError} />}
+          {success && <Alert type="success" title="Authenticated" message="Routing session..." />}
+          <Input id="email" type="email" label="Merchant Email" value={email} onChange={e => setEmail(e.target.value)} error={errors.email} icon={<Mail className="h-4 w-4" />} />
+          <Input id="password" type="password" label="Security Password" value={password} onChange={e => setPassword(e.target.value)} error={errors.password} icon={<Lock className="h-4 w-4" />} />
+          <Button type="submit" isLoading={isLoading} disabled={success}>Access Account</Button>
+          <p className="text-xs text-center text-slate-400">New? <Link to="/register" className="text-blue-400 hover:text-blue-300 font-bold">Register Business</Link></p>
+        </form>
+      </div>
+    </div>
+  );
+};`
+  },
+  {
+    path: "cashbridge-frontend/src/pages/Register.tsx",
+    filename: "Register.tsx",
+    description: "Self-validated registration interface, implementing live character constraint trackers and Axios postings.",
+    content: `import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Mail, Lock, User, Briefcase, ArrowRight, ShieldCheck } from "lucide-react";
+import { apiClient } from "../api/client";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Alert } from "../components/ui/Alert";
+
+export const Register: React.FC = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [errors, setErrors] = useState<any>({});
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await apiClient.post("/auth/register", { email, password, firstName, lastName, companyName });
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (err: any) {
+      setApiError(err.response?.data?.message || "Failed onboarding.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-xl w-full bg-slate-800 rounded-2xl border border-slate-700/60 p-8 space-y-6 animate-fade-in">
+        <h2 className="text-xl font-bold text-white text-center">Register Business</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {apiError && <Alert type="error" title="Registration Alert" message={apiError} />}
+          {success && <Alert type="success" title="Created" message="Moving to login..." />}
+          <Input id="company" label="Trading Name" value={companyName} onChange={e=>setCompanyName(e.target.value)} icon={<Briefcase className="h-4 w-4" />} />
+          <Input id="firstName" label="First Name" value={firstName} onChange={e=>setFirstName(e.target.value)} icon={<User className="h-4 w-4" />} />
+          <Input id="lastName" label="Last Name" value={lastName} onChange={e=>setLastName(e.target.value)} icon={<User className="h-4 w-4" />} />
+          <Input id="email" label="Accounting Email" value={email} onChange={e=>setEmail(e.target.value)} icon={<Mail className="h-4 w-4" />} />
+          <Input id="password" type="password" label="Pin Password" value={password} onChange={e=>setPassword(e.target.value)} icon={<Lock className="h-4 w-4" />} />
+          <Button type="submit" isLoading={isLoading}>Submit Onboarding</Button>
+          <p className="text-xs text-center text-slate-400">Joined? <Link to="/login" className="text-blue-400">Log In</Link></p>
+        </form>
+      </div>
+    </div>
+  );
+};`
   }
 ];
