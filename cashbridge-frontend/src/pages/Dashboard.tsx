@@ -25,6 +25,7 @@ import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Alert } from "../components/ui/Alert";
 import { apiClient } from "../api/client";
+import { useAuthStore } from "../store/authStore";
 
 // Interfaces mimicking production ledger fields
 interface LedgerTransaction {
@@ -49,6 +50,7 @@ interface AnalyticsSummary {
 
 export const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [isOnlineState, setIsOnlineState] = useState<boolean>(navigator.onLine);
 
@@ -128,7 +130,7 @@ export const Dashboard: React.FC = () => {
               {isFetching && <RefreshCcw className="h-4 w-4 text-blue-400 animate-spin shrink-0" />}
             </h1>
             <p className="text-xs text-slate-400 mt-1">
-              Synchronized secure accounting logs for Kofi Mensah Cocoa Syndicate Ltd.
+              Synchronized secure accounting logs for {user?.companyName || "Kofi Mensah Cocoa Syndicate Ltd"}.
             </p>
           </div>
 

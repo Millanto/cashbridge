@@ -28,13 +28,45 @@ import DeploymentTab from "./components/DeploymentTab";
 import RoadmapTab from "./components/RoadmapTab";
 import CodebaseTab from "./components/CodebaseTab";
 
-type TabType = "system-arch" | "folders" | "database" | "api" | "payments" | "offline-sync" | "deployment" | "roadmap" | "codebase";
+// Sandbox components
+import SandboxTransactionsTab from "./components/SandboxTransactionsTab";
+import SandboxCustomersTab from "./components/SandboxCustomersTab";
+import SandboxAnalyticsTab from "./components/SandboxAnalyticsTab";
+
+// Live Frontend Terminal Entry
+import { App as CashBridgeLiveTerminal } from "../cashbridge-frontend/src/App";
+
+// Seeder
+import { DatabaseSeeder } from "./services/databaseSeeder";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+
+type TabType = "live-terminal" | "system-arch" | "folders" | "database" | "api" | "payments" | "offline-sync" | "deployment" | "roadmap" | "codebase" | "sandbox-transactions" | "sandbox-customers" | "sandbox-analytics";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    }
+  }
+});
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabType>("system-arch");
+  const [activeTab, setActiveTab] = useState<TabType>("live-terminal");
   const [downloadingSpec, setDownloadingSpec] = useState(false);
 
+  // Run IndexedDB seeder on boot hook
+  useEffect(() => {
+    DatabaseSeeder.seedIfEmpty().catch(err => console.error("Index database initialization failure:", err));
+  }, []);
+
   const menuItems = [
+    { id: "live-terminal", label: "Live Merchant Workspace", icon: Compass, group: "Live Sandbox" },
+    { id: "sandbox-transactions", label: "Ledger Transactions", icon: Wallet, group: "Live Sandbox" },
+    { id: "sandbox-customers", label: "Creditors & Debts", icon: LayoutList, group: "Live Sandbox" },
+    { id: "sandbox-analytics", label: "Analytics Dashboard", icon: ShieldCheck, group: "Live Sandbox" },
+
     { id: "system-arch", label: "System Architecture", icon: Layers, group: "Project Spec" },
     { id: "folders", label: "Folder Structures", icon: FolderTree, group: "Project Spec" },
     { id: "database", label: "Database & Schema", icon: Database, group: "Project Spec" },
@@ -79,6 +111,14 @@ For implementation and deployment guidelines, review the fully interactive UI co
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
+      case "live-terminal":
+        return <CashBridgeLiveTerminal />;
+      case "sandbox-transactions":
+        return <SandboxTransactionsTab />;
+      case "sandbox-customers":
+        return <SandboxCustomersTab />;
+      case "sandbox-analytics":
+        return <SandboxAnalyticsTab />;
       case "system-arch":
         return <SystemArchTab />;
       case "folders":
@@ -98,12 +138,13 @@ For implementation and deployment guidelines, review the fully interactive UI co
       case "roadmap":
         return <RoadmapTab />;
       default:
-        return <SystemArchTab />;
+        return <SandboxTransactionsTab />;
     }
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
+    <QueryClientProvider client={queryClient}>
+      <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
       {/* Sidebar Navigation */}
       <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 bg-white shrink-0">
         <div className="flex h-16 items-center px-6 border-b border-slate-100 shrink-0">
@@ -246,5 +287,6 @@ For implementation and deployment guidelines, review the fully interactive UI co
         </div>
       </main>
     </div>
+    </QueryClientProvider>
   );
 }
