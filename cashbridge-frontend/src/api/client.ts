@@ -32,7 +32,7 @@ apiClient.interceptors.request.use(async (config) => {
   const url = config.url || "";
   
   // Only intercept cashbridge routes for local sandboxing when no backend is live
-  if (url.startsWith("/auth/") || url.startsWith("/business/") || url.startsWith("/sync/")) {
+  if (url.includes("/auth/") || url.includes("/business/") || url.includes("/sync/")) {
     // Mock latency to simulate network calls
     await new Promise((resolve) => setTimeout(resolve, 800));
 

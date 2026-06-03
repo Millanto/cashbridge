@@ -102,33 +102,33 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6 md:p-10 font-sans">
-      <div className="max-w-xl w-full bg-slate-800 rounded-2xl border border-slate-700/60 shadow-xl overflow-hidden self-center transition-all">
+    <div className="min-h-screen bg-[#090d16] flex items-center justify-center p-4 sm:p-6 md:p-10 font-sans">
+      <div className="max-w-xl w-full bg-[#111827] rounded-3xl border border-slate-800/80 shadow-2xl overflow-hidden self-center transition-all p-1">
         
         {/* Branding header */}
-        <div className="p-6 sm:p-8 border-b border-slate-700/40 bg-slate-850 text-center">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
-            Merchants & Traders Gateway
+        <div className="p-6 sm:p-8 pt-8 pb-4 text-center">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/10 mb-4">
+            Start Bookkeeping in Minutes
           </span>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-            Register your Business Onboard
+            Register your business with CashBridge
           </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-[340px] mx-auto leading-relaxed">
-            Create an owner profile to secure settlements, activate card routers, and sync ledger rows.
+          <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-[420px] mx-auto leading-relaxed">
+            Create your free merchant profile to record transactions, trade offline, and manage customer credit offsets cleanly.
           </p>
         </div>
 
         {/* Content Canvas */}
-        <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8 pt-2 space-y-6">
           {apiError && (
-            <Alert type="error" title="Registration Halt" message={apiError} />
+            <Alert type="error" title="Could Not Register" message={apiError} />
           )}
 
           {success && (
             <Alert
               type="success"
-              title="Onboard Profile Created!"
-              message="Your merchant identity has been saved securely on Postgres. Moving to key authorization screen..."
+              title="Business Registered!"
+              message="Your business profile was successfully created. Redirecting you to login..."
             />
           )}
 
@@ -136,106 +136,108 @@ export const Register: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               id="firstName"
-              label="First Name"
+              label="Your First Name"
               placeholder="e.g. Kofi"
               error={errors.firstName}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               disabled={isLoading || success}
-              icon={<User className="h-4 w-4" />}
+              icon={<User className="h-4 w-4 text-slate-400" />}
             />
 
             <Input
               id="lastName"
-              label="Last Name"
+              label="Your Last Name"
               placeholder="e.g. Mensah"
               error={errors.lastName}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               disabled={isLoading || success}
-              icon={<User className="h-4 w-4" />}
+              icon={<User className="h-4 w-4 text-slate-400" />}
             />
           </div>
 
           <Input
             id="companyName"
-            label="Registered Trading Name (Company)"
-            placeholder="e.g. Mensah Cocoa Syndicate Ltd"
+            label="Business Name / Shop Name"
+            placeholder="e.g. Kofi Mensah Cocoa Syndicate or Ama's Provisions"
             error={errors.companyName}
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
             disabled={isLoading || success}
-            icon={<Briefcase className="h-4 w-4" />}
+            icon={<Briefcase className="h-4 w-4 text-slate-400" />}
           />
 
           <Input
             id="email"
             type="email"
-            label="Primary Accounting Email Address"
-            placeholder="mensah@cocoatrade.com"
+            label="Business Email Address"
+            placeholder="e.g. kofi@cocoamerchants.com"
             error={errors.email}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading || success}
-            icon={<Mail className="h-4 w-4" />}
+            icon={<Mail className="h-4 w-4 text-slate-400" />}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-            <Input
-              id="password"
-              type="password"
-              label="Password (Security Code)"
-              placeholder="Min 8 characters"
-              error={errors.password}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading || success}
-              icon={<Lock className="h-4 w-4" />}
-            />
+            <div className="w-full">
+              <Input
+                id="password"
+                type="password"
+                label="Choose Pin / Password"
+                placeholder="Choose a password"
+                error={errors.password}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading || success}
+                icon={<Lock className="h-4 w-4 text-slate-400" />}
+              />
+            </div>
 
             {/* Password security checklist grid */}
-            <div className="bg-slate-850 p-4 rounded-xl border border-slate-700/30 text-[11px] text-slate-400 space-y-2 mt-4 md:mt-0">
+            <div className="bg-[#182235]/40 p-4 rounded-2xl border border-slate-800/60 text-xs text-slate-400 space-y-2.5 mt-2 md:mt-6">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                Pin Security Parameters
+                Password Strength Checklist
               </span>
-              <ul className="space-y-1.5 font-medium transition-colors">
-                <li className={`flex items-center gap-1.5 ${isMinLength ? "text-emerald-400" : "text-slate-400"}`}>
-                  {isMinLength ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <Circle className="h-3.5 w-3.5 shrink-0 opacity-40" />}
-                  <span>8+ character density</span>
+              <ul className="space-y-2 font-medium transition-colors text-[11px]">
+                <li className={`flex items-center gap-2 ${isMinLength ? "text-emerald-400" : "text-slate-400"}`}>
+                  {isMinLength ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0 opacity-40 text-slate-500" />}
+                  <span>At least 8 characters long</span>
                 </li>
-                <li className={`flex items-center gap-1.5 ${hasLowercase ? "text-emerald-400" : "text-slate-400"}`}>
-                  {hasLowercase ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <Circle className="h-3.5 w-3.5 shrink-0 opacity-40" />}
-                  <span>At least one lowercase letter (a-z)</span>
+                <li className={`flex items-center gap-2 ${hasLowercase ? "text-emerald-400" : "text-slate-400"}`}>
+                  {hasLowercase ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0 opacity-40 text-slate-500" />}
+                  <span>At least one lowercase (a-z)</span>
                 </li>
-                <li className={`flex items-center gap-1.5 ${hasUppercase ? "text-emerald-400" : "text-slate-400"}`}>
-                  {hasUppercase ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <Circle className="h-3.5 w-3.5 shrink-0 opacity-40" />}
-                  <span>At least one uppercase letter (A-Z)</span>
+                <li className={`flex items-center gap-2 ${hasUppercase ? "text-emerald-400" : "text-slate-400"}`}>
+                  {hasUppercase ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0 opacity-40 text-slate-500" />}
+                  <span>At least one uppercase (A-Z)</span>
                 </li>
-                <li className={`flex items-center gap-1.5 ${hasDigit ? "text-emerald-400" : "text-slate-400"}`}>
-                  {hasDigit ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <Circle className="h-3.5 w-3.5 shrink-0 opacity-40" />}
-                  <span>At least one integer digit (0-9)</span>
+                <li className={`flex items-center gap-2 ${hasDigit ? "text-emerald-400" : "text-slate-400"}`}>
+                  {hasDigit ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Circle className="h-4 w-4 shrink-0 opacity-40 text-slate-500" />}
+                  <span>At least one number (0-9)</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <Button type="submit" isLoading={isLoading} disabled={success}>
+          <Button type="submit" isLoading={isLoading} disabled={success} className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl shadow-lg shadow-blue-500/10 mt-2">
             {success ? (
               <span className="flex items-center gap-1.5 justify-center">
-                <ShieldCheck className="h-4 w-4" /> Account Registered!
+                <ShieldCheck className="h-4.5 w-4.5 text-emerald-400 animate-bounce" /> Registration Complete!
               </span>
             ) : (
               <span className="flex items-center gap-1.5 justify-center">
-                Create Owner Profile <ArrowRight className="h-4 w-4" />
+                Create Free Account <ArrowRight className="h-4.5 w-4.5" />
               </span>
             )}
           </Button>
 
-          <div className="text-center pt-1.5">
+          <div className="text-center pt-2">
             <p className="text-xs text-slate-400 font-medium">
-              Already registered?{" "}
+              Already have an account?{" "}
               <Link to="/login" className="text-blue-400 hover:text-blue-200 font-bold underline decoration-blue-500/30">
-                Log in with credentials
+                Log in here
               </Link>
             </p>
           </div>
